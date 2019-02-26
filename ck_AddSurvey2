@@ -1,0 +1,220 @@
+<?php
+
+	//session_start();
+	$doc_root = $_SERVER['DOCUMENT_ROOT'];
+	include("$doc_root/configwww.php");
+	include ("$doc_root/connect.php");
+	
+	$d = date("d");
+	$m = date("m");
+	$y = date("Y");
+	$date1 = "$y-$m-$d";
+	$today = date("H:i:s"); 
+	
+//--------------------------------------------------	
+	$Survey_Year=$_GET['Survey_Year'];	
+	$yy=$Survey_Year-543;
+	$date2=$date1;	
+	$Duable_id=$_GET['Duable_Num'];
+	$Personal_Id=$_GET['Personal_Id'];	
+	$DuableStatus_Id=$_GET['DuableStatus_Id'];	
+	$Room_id=$_GET['Room_id'];	
+	$Zone=$_GET['Zone'];	
+	$today=$today;	
+	$Note=$_GET['Note'];
+	$Ck="true";
+	$getCk = $_GET['Ck'];
+	/*ตัดสัญลักษณ์ออก*/
+	$pic=split('[-./]',$Duable_id);
+	$pic0=$pic[0].$pic[1].$pic[2].$pic[3].$pic[4].$pic[5];
+	$date0 = "$y$m$d";
+	$today0 = date("Hi");
+	$filename0 = 'drb_'.$pic0.'_'.$date0.$today0.'.jpg';//ชื่อรูป
+  	$filename = 'duableimage/'.$filename0;
+  	$Img = $filename0;
+//--------------------------------------------------	
+?>
+<?php
+/************************************CONFIG****************************************/
+
+//SETTINGS//
+//This code is something you set in the APP so random people cant use it.
+
+//$ACCESSKEY="secret";
+
+/************************************CONFIG****************************************/
+
+//these are just in case setting headers forcing it to always expire
+//header('Cache-Control: no-cache, must-revalidate');
+
+//***********************************************************************************//
+//$objConnect = mysql_connect("localhost","jowaveco_csmju","2nPn74dF") or die("Error Connect to Database");
+//$objDB = mysql_select_db("jowaveco_csmju");
+//mysql_query("SET NAMES UTF-8");
+//***********************************************************************************//
+//if($_GET['p']==$ACCESSKEY){
+  // this is the workaround for file_get_contents(...)
+  require_once (dirname(__FILE__).'/PHP_Compat-1.6.0a3/Compat/Function/file_get_contents.php');
+  $data = php_compat_file_get_contents('php://input');
+//***********************************************************************************//
+		 		 //die(urldecode($data));
+				$sql3 = "SELECT * FROM duable WHERE Duable_id = '$Duable_id'";	
+			$result3 = mysql_query($sql3) or die('Query failed: ' .mysql_error()) ;
+			$line3 = mysql_fetch_array($result3, MYSQL_ASSOC);
+			$Duable_id2 = $line3["Duable_id"];
+	
+			$SqlImg = "SELECT *
+				FROM duable
+				WHERE Duable_id = '$Duable_id'";
+				$SqlImg1 = mysql_query($SqlImg) or die('Query failed: ' . mysql_error());
+				while($SqlImg2 = mysql_fetch_array($SqlImg1)){
+				$ImgOld = $SqlImg2['Image']; //ชื่อผู้รับผิดชอบครุภัณฑ์
+			}
+
+
+		if($Duable_id2 == null){//check error_1
+			echo urldecode("Fail");
+			exit();
+		}else{		
+	
+			$sql1="SELECT * FROM survey WHERE Duable_Num = '$Duable_id2' OR Duable_Num LIKE '%$Duable_id2%'";
+			$result = mysql_query($sql1) or die('Query failed: ' .mysql_error()) ;
+			$numrow = mysql_num_rows($result);
+
+		if($numrow != 0){//ถ้ามีข้อมูลอยู่ในตาราง survey
+		$line1 = mysql_fetch_array($result, MYSQL_ASSOC);
+		$id = $line1["Survey_Id"];
+		$Num = $line1["Duable_Num"];
+	//---
+		$Survey_year = $line1["Survey_year"];
+	
+	if($Survey_year == $yy){//ถ้าไม่เป็น ปีงบประมาณเดิม
+/*------------------SaveFile----------------------*/
+	//if (filesize($filename) != 0) {
+	if ($_GET['Ck'] == $Ck) {
+	file_put_contents($filename,$data);
+/*------------------SaveFile----------------------*/
+		$sql="UPDATE survey 
+			SET 
+			Survey_Date = '$date2',
+			Duable_Num = '$Num',
+			Username = '$Personal_Id',
+			DuableStatus_Id = '$DuableStatus_Id',
+			Room_id = '$Room_id',
+			Zone = '$Zone',
+			Ts = '$today',
+			Note = '$Note',
+			Survey_year = '$yy',
+			Image = '$Img'
+			WHERE Survey_Id = '$id'";
+		}else{
+		$sql="UPDATE survey 
+			SET 
+			Survey_Date = '$date2',
+			Duable_Num = '$Num',
+			Username = '$Personal_Id',
+			DuableStatus_Id = '$DuableStatus_Id',
+			Room_id = '$Room_id',
+			Zone = '$Zone',
+			Ts = '$today',
+			Note = '$Note',
+			Survey_year = '$yy'
+			Image = '$ImgOld'
+			WHERE Survey_Id = '$id'";
+			}
+		
+	}else if($Survey_year != $yy){//ถ้าเป็น ปีงบประมาณเดิม
+/*------------------SaveFile----------------------*/
+	//if (filesize($filename) != 0) {
+	if ($_GET['Ck'] == $Ck) {
+	file_put_contents($filename,$data);
+/*------------------SaveFile----------------------*/
+		$sql="INSERT INTO survey (Survey_Date, Duable_Num, Username, DuableStatus_Id, Room_id, Zone, Ts, Note, Survey_year, Image)
+				VALUES('$date2','$Duable_id2','$Personal_Id','$DuableStatus_Id','$Room_id','$Zone','$today','$Note','$yy','$Img')";
+	}else{
+		$sql="INSERT INTO survey (Survey_Date, Duable_Num, Username, DuableStatus_Id, Room_id, Zone, Ts, Note, Survey_year, Image)
+				VALUES('$date2','$Duable_id2','$Personal_Id','$DuableStatus_Id','$Room_id','$Zone','$today','$Note','$yy','$ImgOld')";	
+			} 
+		}
+		
+		$result = mysql_query($sql) or die('Query failed: ' .mysql_error());
+			if($sql == 0){//check error_2
+				echo urldecode("Complete"."  "."V.1");
+			}else{
+				echo urldecode("Fail");
+			}//end check error_2
+	/*----------------------------------------------*///การอัพเดทข้อมูลห้องตาราง duable
+		$sql1="SELECT * FROM duable
+				WHERE Duable_id ='$Num'";
+		$result = mysql_query($sql1) or die('SELECT survey fail: ' . mysql_error());	
+   			while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+	       $id = $row['Duable_num'];    }
+	//if (filesize($filename) != 0) {
+	if ($_GET['Ck'] == $Ck) {
+		$sql2="UPDATE  duable 
+	  	     	SET Room_id = '$Room_id',
+	 			DuableStatus_Id = '$DuableStatus_Id',
+				Zone = '$Zone',
+				Image = '$Img'
+				WHERE Duable_num ='$id'";
+	}else{
+		$sql2="UPDATE  duable 
+				SET Room_id = '$Room_id',
+				DuableStatus_Id = '$DuableStatus_Id', 
+				Zone = '$Zone'
+			    Image = '$ImgOld'
+				WHERE Duable_num ='$id'";
+			}
+		$result = mysql_query($sql2) or die('Query failed: ' .mysql_error());
+	/*----------------------------------------------*///สิ้นสุดการอัพเดทข้อมูลห้องตาราง duable
+	
+}else if($numrow == 0){//แต่ถ้าไม่มีข้อมูลอยูในตาราง survey
+/*------------------SaveFile----------------------*/
+	//if (filesize($filename) != 0) {
+	if ($_GET['Ck'] == $Ck) {
+	file_put_contents($filename,$data);
+/*------------------SaveFile----------------------*/
+		$sql="INSERT INTO survey (Survey_Date, Duable_Num, Username, DuableStatus_Id, Room_id, Zone, Ts, Note, Survey_year, Image)
+				VALUES('$date2','$Duable_id2','$Personal_Id','$DuableStatus_Id','$Room_id','$Zone','$today','$Note','$yy','$Img')";
+		}else{
+		$sql="INSERT INTO survey (Survey_Date, Duable_Num, Username, DuableStatus_Id, Room_id, Zone, Ts, Note, Survey_year, Image)
+				VALUES('$date2','$Duable_id2','$Personal_Id','$DuableStatus_Id','$Room_id','$Zone','$today','$Note','$yy','$ImgOld')";
+		}
+		$result = mysql_query($sql) or die('Query failed: ' .mysql_error());
+			if($sql == 0){//check error_3
+				echo urldecode("Complete"."  "."V.2");
+			}else{
+				echo urldecode("Fail");
+			}//end check error_3
+	/*----------------------------------------------*///การอัพเดทข้อมูลห้องตาราง duable
+		$sql1="SELECT * FROM duable
+				WHERE Duable_id ='$Duable_id'";
+		$result = mysql_query($sql1) or die('SELECT survey fail: ' . mysql_error());	
+    		while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+			$id = $row['Duable_num'];    }
+	//if (filesize($filename) != 0) {
+	if ($_GET['Ck'] == $Ck) {
+		$sql2="UPDATE  duableimage 
+	       		SET Room_id = '$Room_id',
+	       		DuableStatus_Id = '$DuableStatus_Id',
+		   		Zone = '$Zone',
+		   		Image = '$Img'
+	       		WHERE Duable_num ='$id'";
+	}else{
+		$sql2="UPDATE  duableimage 
+	       		SET Room_id = '$Room_id',
+	       		DuableStatus_Id = '$DuableStatus_Id',
+		   		Zone = '$Zone'
+		   		Image = '$ImgOld'
+	       		WHERE Duable_num ='$id'";
+		}
+	$result = mysql_query($sql2) or die('Query failed: ' .mysql_error());
+	/*----------------------------------------------*///สิ้นสุดารอัพเดทข้อมูลห้องตาราง duable
+	} //end if แต่ถ้าไม่มีข้อมูลอยูในตาราง survey
+
+}//end check error_1
+
+
+		
+
+?>
